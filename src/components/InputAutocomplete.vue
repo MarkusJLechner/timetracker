@@ -56,7 +56,7 @@ const autocompleteOptions = [
   'd', // Daily
   'w', // Weekly
   'div', // Diverses
-  'Tb', // Team blue
+  'tb', // Team blue
   'f', // feature (Dev-Team)
   't', // testen (Dev-Team)
   'pr', // pull request (Dev-Team)
@@ -94,7 +94,7 @@ const getCommentForOption = (option: string) => {
     d: 'Daily',
     w: 'Weekly',
     div: 'Diverses',
-    Tb: 'Team blue',
+    tb: 'Team blue',
     f: 'feature',
     t: 'testen',
     pr: 'pull request',

@@ -158,7 +158,7 @@ const taskList: Record<string, string> = {
   d: 'Daily',
   w: 'Weekly',
   div: 'Diverses',
-  Tb: 'Team blue',
+  tb: 'Team blue',
   f: 'feature',
   t: 'testen',
   pr: 'pull request',
