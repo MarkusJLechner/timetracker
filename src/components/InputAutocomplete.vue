@@ -4,7 +4,7 @@
       ref="inputField"
       v-model="taskInput"
       type="text"
-      placeholder="Enter your task #tag @project"
+      placeholder="Enter your task"
       class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
       @keydown.enter="onEnterKey"
       @keydown.down.prevent="onArrowDown"
@@ -40,20 +40,20 @@ import { ref, nextTick, onMounted, computed } from 'vue'
 
 const taskInput = defineModel({ required: true })
 const autocompleteOptions = [
-  '#o', // Organisatorisches
-  '#m', // Meeting
-  '#d', // Daily
-  '#w', // Weekly
-  '#div', // Diverses
-  '#Tb', // Team blue
-  '#f', // feature (Dev-Team)
-  '#t', // testen (Dev-Team)
-  '#pr', // pull request (Dev-Team)
-  '#r', // Refactoring (Dev-Team)
-  '#re', // Release (Dev-Team)
-  '#b', // bugfix (Dev-Team)
-  '#e2e', // e2e (Dev-Team)
-  '#ts' // technischer Support (Dev-Team)
+  'o', // Organisatorisches
+  'm', // Meeting
+  'd', // Daily
+  'w', // Weekly
+  'div', // Diverses
+  'Tb', // Team blue
+  'f', // feature (Dev-Team)
+  't', // testen (Dev-Team)
+  'pr', // pull request (Dev-Team)
+  'r', // Refactoring (Dev-Team)
+  're', // Release (Dev-Team)
+  'b', // bugfix (Dev-Team)
+  'e2e', // e2e (Dev-Team)
+  'ts' // technischer Support (Dev-Team)
 ]
 
 const filteredOptions = ref<string[]>([])
@@ -65,20 +65,20 @@ const inputCoords = ref({ top: 0, left: 0, width: 0 })
 
 const getCommentForOption = (option: string) => {
   const commentMap: Record<string, string> = {
-    '#o': 'Organisatorisches',
-    '#m': 'Meeting',
-    '#d': 'Daily',
-    '#w': 'Weekly',
-    '#div': 'Diverses',
-    '#Tb': 'Team blue',
-    '#f': 'feature',
-    '#t': 'testen',
-    '#pr': 'pull request',
-    '#r': 'Refactoring',
-    '#re': 'Release',
-    '#b': 'bugfix',
-    '#e2e': 'e2e',
-    '#ts': 'technischer Support'
+    o: 'Organisatorisches',
+    m: 'Meeting',
+    d: 'Daily',
+    w: 'Weekly',
+    div: 'Diverses',
+    Tb: 'Team blue',
+    f: 'feature',
+    t: 'testen',
+    pr: 'pull request',
+    r: 'Refactoring',
+    re: 'Release',
+    b: 'bugfix',
+    e2e: 'e2e',
+    ts: 'technischer Support'
   }
   return commentMap[option] || ''
 }
@@ -90,12 +90,12 @@ const onInput = (event: Event) => {
 
   cursorPosition.value = cursorPos
 
-  // Extract the word before the cursor
+  // Match the first word in the input
   const textBeforeCursor = inputValue.slice(0, cursorPos)
-  const match = textBeforeCursor.match(/#(\w*)$/)
+  const match = textBeforeCursor.match(/^\s*(\S*)$/)
   if (match) {
-    const tagText = match[1]
-    filteredOptions.value = autocompleteOptions.filter((option) => option.startsWith('#' + tagText))
+    const inputText = match[1]
+    filteredOptions.value = autocompleteOptions.filter((option) => option.startsWith(inputText))
 
     if (filteredOptions.value.length > 0) {
       selectedOptionIndex.value = 0
@@ -110,6 +110,8 @@ const onInput = (event: Event) => {
           inputField.value.focus()
         }
       })
+    } else {
+      hidePopover()
     }
   } else {
     hidePopover()
@@ -149,14 +151,15 @@ const insertOption = () => {
   const cursorPos = cursorPosition.value
 
   const textBeforeCursor = inputValue.slice(0, cursorPos)
-  const match = textBeforeCursor.match(/#(\w*)$/)
+  const match = textBeforeCursor.match(/^\s*(\S*)$/)
   if (match) {
-    const tagStartIndex = cursorPos - match[0].length
-    const newValue = inputValue.slice(0, tagStartIndex) + option + inputValue.slice(cursorPos)
+    const wordStartIndex = cursorPos - match[1].length
+    const newValue =
+      inputValue.slice(0, wordStartIndex) + option + ': ' + inputValue.slice(cursorPos)
     taskInput.value = newValue
     nextTick(() => {
       if (inputField.value) {
-        const newCursorPos = tagStartIndex + option.length
+        const newCursorPos = wordStartIndex + option.length + 2 // +2 for ': '
         inputField.value.setSelectionRange(newCursorPos, newCursorPos)
         inputField.value.focus()
         cursorPosition.value = newCursorPos
@@ -186,7 +189,8 @@ const autocompleteStyle = computed(() => ({
   position: 'absolute',
   top: `${inputCoords.value.top}px`,
   left: `${inputCoords.value.left}px`,
-  width: `${inputCoords.value.width}px`
+  width: `${inputCoords.value.width}px`,
+  zIndex: 9999
 }))
 </script>
 
@@ -195,7 +199,6 @@ const autocompleteStyle = computed(() => ({
   list-style-type: none;
   padding: 0;
   margin: 0;
-  z-index: 9999;
 }
 
 .autocomplete-list li.selected {

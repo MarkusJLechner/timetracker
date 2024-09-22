@@ -34,7 +34,7 @@
         <!-- Tag List -->
         <div class="flex flex-wrap gap-2 mb-4">
           <span
-            v-for="(comment, tag) in commentMap"
+            v-for="(comment, tag) in taskList"
             :key="tag"
             @click="selectOption(tag)"
             class="relative bg-gray-200 bg-opacity-10 text-gray-200 text-xs font-semibold px-2 py-1 rounded cursor-pointer hover:bg-gray-500 border border-transparent hover:border-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 transition-all"
@@ -125,9 +125,12 @@
       >
         <div class="text-white text-xl font-semibold mb-2">Summary</div>
         <ul class="text-white space-y-1 text-sm overflow-y-auto max-h-40">
-          <li v-for="(duration, tag) in tagDurations" :key="tag" class="flex justify-between">
-            <div>{{ tag }}:</div>
-            <div class="text-yellow-300">{{ formatDuration(0, duration) }}</div>
+          <li v-for="(data, tag) in tagDurations" :key="tag" class="flex justify-between">
+            <div>
+              {{ tag }}:
+              <span class="text-orange-300 text-xs">{{ data.description.join('; ') }}</span>
+            </div>
+            <div class="text-yellow-300">{{ formatDuration(0, data.duration) }}</div>
           </li>
         </ul>
       </div>
@@ -148,27 +151,25 @@ let intervalId: number | null = null
 
 const timerEvents = useLocalStorage<{ startTime: number; details: string }[]>('timerEvents', [])
 
-const tagDurations = ref<{ [key: string]: number }>({})
-
-const commentMap: Record<string, string> = {
-  '#o': 'Organisatorisches',
-  '#m': 'Meeting',
-  '#d': 'Daily',
-  '#w': 'Weekly',
-  '#div': 'Diverses',
-  '#Tb': 'Team blue',
-  '#f': 'feature',
-  '#t': 'testen',
-  '#pr': 'pull request',
-  '#r': 'Refactoring',
-  '#re': 'Release',
-  '#b': 'bugfix',
-  '#e2e': 'e2e',
-  '#ts': 'technischer Support'
+const taskList: Record<string, string> = {
+  o: 'Organisatorisches',
+  m: 'Meeting',
+  d: 'Daily',
+  w: 'Weekly',
+  div: 'Diverses',
+  Tb: 'Team blue',
+  f: 'feature',
+  t: 'testen',
+  pr: 'pull request',
+  r: 'Refactoring',
+  re: 'Release',
+  b: 'bugfix',
+  e2e: 'e2e',
+  ts: 'technischer Support'
 }
 
 function selectOption(tag: string) {
-  taskInput.value += tag
+  taskInput.value += tag.toLowerCase() + ': '
 
   focusInput()
 }
@@ -176,20 +177,28 @@ function selectOption(tag: string) {
 const reversedTimerEvents = computed(() => timerEvents.value.slice().reverse())
 watch(timerEvents, calculateTagDurations, { deep: true })
 
+const tagDurations = ref<{ [key: string]: { duration: number; description: string[] } }>({})
+
 function calculateTagDurations() {
-  const durations: { [key: string]: number } = {}
+  const durations: { [key: string]: { duration: number; description: string[] } } = {}
 
   timerEvents.value.forEach((event) => {
-    if (event.details.includes('#')) {
-      const tags = event.details.match(/#\w+/g) || []
+    const tagMatch = event.details.match(/^(.*?):\s*(.*)$/) // Match the "tag" before the colon and description after
+    if (tagMatch) {
+      const tag = tagMatch[1].trim()
+      const description = tagMatch[2].trim()
       const duration = event.endTime ? event.endTime - event.startTime : 0
 
-      tags.forEach((tag) => {
-        if (!durations[tag]) {
-          durations[tag] = 0
-        }
-        durations[tag] += duration
-      })
+      if (!durations[tag]) {
+        durations[tag] = { duration: 0, description: [] }
+      }
+
+      durations[tag].duration += duration
+
+      // Add the description to the array if it's not already present
+      if (!durations[tag].description.includes(description)) {
+        durations[tag].description.push(description)
+      }
     }
   })
 
