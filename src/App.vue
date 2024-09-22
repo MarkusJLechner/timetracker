@@ -36,7 +36,8 @@
         <div class="flex items-center justify-center space-x-4">
           <button
             @click="startTimer"
-            class="rounded-full bg-green-500 p-4 shadow-lg text-white hover:bg-green-600 focus:outline-none transition transform hover:scale-105"
+            :disabled="!taskInput"
+            class="rounded-full bg-green-500 p-4 shadow-lg text-white hover:bg-green-600 focus:outline-none transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <!-- Play Icon -->
             <svg
@@ -51,7 +52,8 @@
           </button>
           <button
             @click="stopTimer"
-            class="rounded-full bg-red-500 p-4 shadow-lg text-white hover:bg-red-600 focus:outline-none transition transform hover:scale-105"
+            :disabled="!isRunning"
+            class="rounded-full bg-red-500 p-4 shadow-lg text-white hover:bg-red-600 focus:outline-none transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <!-- Stop Icon -->
             <svg
@@ -71,7 +73,7 @@
     <div class="flex flex-wrap justify-center w-full max-w-4xl mt-4 gap-4">
       <!-- Events List -->
       <div
-        class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-4 w-full max-w-sm"
+        class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-4 w-full max-w-sm"
       >
         <div class="flex justify-between items-center mb-2">
           <div class="text-white text-xl font-semibold">Events</div>
@@ -108,7 +110,7 @@
       </div>
       <!-- Summary Section -->
       <div
-        class="bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-4 w-full max-w-sm"
+        class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-4 w-full max-w-sm"
       >
         <div class="text-white text-xl font-semibold mb-2">Summary</div>
         <ul class="text-white space-y-1 text-sm overflow-y-auto max-h-40">
