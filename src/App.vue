@@ -37,6 +37,7 @@
             v-for="(comment, tag) in taskList"
             :key="tag"
             @click="selectOption(tag)"
+            :title="comment"
             class="relative bg-gray-200 bg-opacity-10 text-gray-200 text-xs font-semibold px-2 py-1 rounded cursor-pointer hover:bg-gray-500 border border-transparent hover:border-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 transition-all"
           >
             {{ tag }}

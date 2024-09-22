@@ -9,8 +9,19 @@
       @keydown.enter="onEnterKey"
       @keydown.down.prevent="onArrowDown"
       @keydown.up.prevent="onArrowUp"
+      @keydown.esc="hidePopover"
+      @blur="() => nextTick(() => hidePopover)"
       @input="onInput"
     />
+
+    <button
+      v-if="taskInput"
+      @click="clearInput"
+      class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-gray-500 bg-opacity-15 hover:bg-gray-400 text-white px-2 py-1 rounded-full"
+    >
+      ✕
+    </button>
+
     <teleport to="body">
       <ul
         v-if="filteredOptions.length"
@@ -55,6 +66,19 @@ const autocompleteOptions = [
   'e2e', // e2e (Dev-Team)
   'ts' // technischer Support (Dev-Team)
 ]
+
+const clearInput = () => {
+  taskInput.value = ''
+  hidePopover()
+  focusInput()
+}
+
+function focusInput() {
+  nextTick(() => {
+    const input = document.querySelector('input')
+    input?.focus()
+  })
+}
 
 const filteredOptions = ref<string[]>([])
 const selectedOptionIndex = ref(-1)
