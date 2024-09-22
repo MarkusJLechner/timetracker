@@ -10,7 +10,7 @@
       @keydown.down.prevent="onArrowDown"
       @keydown.up.prevent="onArrowUp"
       @keydown.esc="hidePopover"
-      @blur="() => nextTick(() => hidePopover)"
+      @blur="waitHidePopover"
       @input="onInput"
     />
 
@@ -196,6 +196,12 @@ const insertOption = () => {
 const selectOption = (index: number) => {
   selectedOptionIndex.value = index
   insertOption()
+}
+
+const waitHidePopover = () => {
+  setTimeout(() => {
+    hidePopover()
+  }, 150)
 }
 
 const hidePopover = () => {
