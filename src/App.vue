@@ -30,6 +30,19 @@
             @keydown.enter="startTimer"
           />
         </div>
+
+        <!-- Tag List -->
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span
+            v-for="(comment, tag) in commentMap"
+            :key="tag"
+            @click="selectOption(tag)"
+            class="relative bg-gray-200 bg-opacity-10 text-gray-200 text-xs font-semibold px-2 py-1 rounded cursor-pointer hover:bg-gray-500 border border-transparent hover:border-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 transition-all"
+          >
+            {{ tag }}
+          </span>
+        </div>
+
         <!-- Control Buttons -->
         <div class="flex items-center justify-center space-x-4">
           <button
@@ -136,6 +149,29 @@ let intervalId: number | null = null
 const timerEvents = useLocalStorage<{ startTime: number; details: string }[]>('timerEvents', [])
 
 const tagDurations = ref<{ [key: string]: number }>({})
+
+const commentMap: Record<string, string> = {
+  '#o': 'Organisatorisches',
+  '#m': 'Meeting',
+  '#d': 'Daily',
+  '#w': 'Weekly',
+  '#div': 'Diverses',
+  '#Tb': 'Team blue',
+  '#f': 'feature',
+  '#t': 'testen',
+  '#pr': 'pull request',
+  '#r': 'Refactoring',
+  '#re': 'Release',
+  '#b': 'bugfix',
+  '#e2e': 'e2e',
+  '#ts': 'technischer Support'
+}
+
+function selectOption(tag: string) {
+  taskInput.value += tag
+
+  focusInput()
+}
 
 const reversedTimerEvents = computed(() => timerEvents.value.slice().reverse())
 watch(timerEvents, calculateTagDurations, { deep: true })
