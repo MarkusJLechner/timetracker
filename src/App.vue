@@ -193,6 +193,31 @@ function startTimer() {
   focusInput()
 }
 
+function resumeLastTimer() {
+  if (timerEvents.value.length === 0 || timerEvents.value[timerEvents.value.length - 1].endTime) {
+    return
+  }
+
+  isRunning.value = true
+  const lastEvent = timerEvents.value[timerEvents.value.length - 1]
+  const startTime = lastEvent.startTime
+
+  function setTime() {
+    const currentTime = Date.now()
+    const elapsedTime = Math.floor((currentTime - startTime) / 1000)
+    const hrs = String(Math.floor(elapsedTime / 3600)).padStart(2, '0')
+    const mins = String(Math.floor((elapsedTime % 3600) / 60)).padStart(2, '0')
+    const secs = String(elapsedTime % 60).padStart(2, '0')
+    currentTimer.value = `${hrs}:${mins}:${secs}`
+  }
+
+  setTime()
+
+  intervalId = setInterval(() => {
+    setTime()
+  }, 1000)
+}
+
 function stopTimer() {
   if (isRunning.value) {
     clearInterval(intervalId!)
@@ -225,6 +250,7 @@ function formatDuration(startTime: number, endTime: number): string {
 onMounted(() => {
   focusInput()
   calculateTagDurations()
+  resumeLastTimer()
 })
 
 function focusInput() {
