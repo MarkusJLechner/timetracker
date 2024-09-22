@@ -3,11 +3,11 @@
     <!-- Main Container -->
     <div
       :class="[
-    'relative rounded-2xl shadow-xl p-1 max-w-md w-full overflow-hidden flex flex-col items-center bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg min-h-[230px]',
+    'relative rounded-2xl shadow-xl p-[2px] max-w-md w-full overflow-hidden flex flex-col items-center bg-white bg-opacity-10 backdrop-filter backdrop-blur-lg min-h-[230px]',
     isRunning ? 'border-animation' : '',
   ]"
     >
-      <div class="relative rounded-2xl shadow-xl p-6 max-w-md h-full w-full  flex flex-col items-center bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] ">
+      <div class="relative rounded-2xl shadow-xl p-6 max-w-md h-full w-full overflow-hidden flex flex-col items-center bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] ">
         <!-- Timer Display -->
         <div class="text-center text-white text-4xl font-bold mb-6">
           {{ currentTimer }}
@@ -15,14 +15,11 @@
         </div>
         <!-- Task Input -->
         <div class="mb-4 w-full">
-          <multiselect
+          <input
             v-model="taskInput"
-            :options="predefinedTags.concat(timerEvents.map(event => event.details.match(/#\w+/g)).flat().filter(Boolean))"
-            :multiple="true"
-            :taggable="true"
+            type="text"
             placeholder="Enter your task #tag @project"
             class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
-            @tag="newTag => predefinedTags.push(newTag)"
             @keydown.enter="startTimer"
           />
         </div>
@@ -100,8 +97,7 @@ import 'vue-multiselect/dist/vue-multiselect.min.css'
 import { nextTick, onMounted, ref,watch, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 
-const taskInput = ref<string[]>([])
-const predefinedTags = ref(['#work', '#break', '#meeting', '#development'])
+const taskInput = ref('')
 const currentTimer = ref('00:00:00')
 const isRunning = ref(false)
 let intervalId: number | null = null
@@ -133,10 +129,8 @@ function calculateTagDurations() {
   tagDurations.value = durations
 }
 
-const joinedTaskInput = computed(() => taskInput.value.join(' ').trim());
-
 function startTimer() {
-  if (!joinedTaskInput.value) {
+  if (!taskInput.value) {
     return
   }
 
@@ -151,7 +145,7 @@ function startTimer() {
 
   isRunning.value = true
   const startTime = Date.now()
-  timerEvents.value.push({ startTime, details: joinedTaskInput.value })
+  timerEvents.value.push({ startTime, details: taskInput.value })
 
   intervalId = setInterval(() => {
     const currentTime = Date.now()
@@ -162,7 +156,7 @@ function startTimer() {
     currentTimer.value = `${hrs}:${mins}:${secs}`
   }, 1000)
 
-  taskInput.value = []
+  taskInput.value = ''
   focusInput()
 }
 
@@ -216,7 +210,7 @@ function focusInput() {
   inset: -160px;
   background: conic-gradient(
     transparent 270deg,
-    var(--accent-color, #ffff00),
+    #ffff00,
     transparent
   );
   animation: rotate 4s linear infinite;
