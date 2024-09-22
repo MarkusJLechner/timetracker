@@ -24,11 +24,9 @@
         </div>
         <!-- Task Input -->
         <div class="mb-4 w-full">
-          <input
+          <InputAutocomplete
             v-model="taskInput"
-            type="text"
             placeholder="Enter your task #tag @project"
-            class="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
             @keydown.enter="startTimer"
           />
         </div>
@@ -128,6 +126,7 @@
 import 'vue-multiselect/dist/vue-multiselect.min.css'
 import { nextTick, onMounted, ref, watch, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
+import InputAutocomplete from '@/components/InputAutocomplete.vue'
 
 const taskInput = ref('')
 const currentTimer = ref('00:00:00')
