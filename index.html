@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#A456F7">
+
+  <!-- Link to the web app manifest -->
+  <link rel="manifest" href="/site.webmanifest">
+
+  <!-- Icons for different devices -->
+  <link rel="icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="192x192" href="/android-chrome-192x192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/android-chrome-512x512.png">
+
+  <title>Time Tracker</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.ts"></script>
+
+<!-- Service Worker registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').then((registration) => {
+        console.log('Service Worker registered with scope:', registration.scope);
+      }).catch((error) => {
+        console.log('Service Worker registration failed:', error);
+      });
+    });
+  }
+</script>
+</body>
+</html>
