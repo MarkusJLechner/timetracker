@@ -116,10 +116,12 @@ const onInput = (event: Event) => {
 
   // Match the first word in the input
   const textBeforeCursor = inputValue.slice(0, cursorPos)
-  const match = textBeforeCursor.match(/^\s*(\S*)$/)
+  const match = textBeforeCursor.toLowerCase().match(/^\s*(\S*)$/)
   if (match) {
     const inputText = match[1]
-    filteredOptions.value = autocompleteOptions.filter((option) => option.startsWith(inputText))
+    filteredOptions.value = autocompleteOptions.filter((option) =>
+      option.toLowerCase().startsWith(inputText.toLowerCase())
+    )
 
     if (filteredOptions.value.length > 0) {
       selectedOptionIndex.value = 0

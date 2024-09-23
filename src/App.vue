@@ -170,9 +170,9 @@ const taskList: Record<string, string> = {
 }
 
 function selectOption(tag: string) {
-  taskInput.value += tag.toLowerCase() + ': '
+  taskInput.value = tag.toLowerCase() + ': '
 
-  focusInput()
+  focusInput(false)
 }
 
 const reversedTimerEvents = computed(() => timerEvents.value.slice().reverse())
@@ -299,7 +299,17 @@ onMounted(() => {
   resumeLastTimer()
 })
 
-function focusInput() {
+function isMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
+
+function focusInput(blurOnMobile = true) {
+  if (isMobile() && blurOnMobile) {
+    setTimeout(() => {
+      const input = document.querySelector('input')
+      input?.blur()
+    }, 2)
+  }
   nextTick(() => {
     const input = document.querySelector('input')
     input?.focus()
