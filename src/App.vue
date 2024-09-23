@@ -93,7 +93,7 @@
             Clear
           </button>
         </div>
-        <ul class="text-white overflow-y-auto max-h-40 space-y-2">
+        <ul class="text-white overflow-y-auto max-h-[150px] space-y-2">
           <li
             v-for="(event, index) in reversedTimerEvents"
             :key="index"
@@ -130,8 +130,10 @@
       <div
         class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] backdrop-filter backdrop-blur-lg rounded-2xl shadow-xl p-4 w-full max-w-sm"
       >
-        <div class="text-white text-xl font-semibold mb-2">Summary</div>
-        <ul class="text-white space-y-1 text-sm overflow-y-auto max-h-40">
+        <div class="text-white text-xl font-semibold mb-2 justify-between flex">
+          Summary<span class="text-yellow-300">{{ totalDuration }}</span>
+        </div>
+        <ul class="text-white space-y-1 text-sm overflow-y-auto max-h-[450px]">
           <li v-for="(data, tag) in tagDurations" :key="tag" class="flex justify-between">
             <div>
               {{ tag }}:
@@ -162,6 +164,8 @@ watch(currentTimer, (newVal) => {
   const lastEvent = timerEvents.value[timerEvents.value.length - 1]
   const titlePrefix = lastEvent ? lastEvent.details.split(':')[0] : ''
   document.title = `${titlePrefix} - ${newVal}`
+
+  calculateTagDurations()
 })
 
 watch(isRunning, (newVal) => {
@@ -210,30 +214,41 @@ watch(timerEvents, calculateTagDurations, { deep: true })
 
 const tagDurations = ref<{ [key: string]: { duration: number; description: string[] } }>({})
 
-function calculateTagDurations() {
-  const durations: { [key: string]: { duration: number; description: string[] } } = {}
+const totalDuration = computed(() => {
+  const totalSeconds = Object.values(tagDurations.value).reduce(
+    (sum, { duration }) => sum + duration,
+    0
+  )
+  return formatDuration(0, totalSeconds)
+})
 
-  timerEvents.value.forEach((event) => {
-    const tagMatch = event.details.match(/^(.*?):\s*(.*)$/) // Match the "tag" before the colon and description after
+function calculateTagDurations() {
+  const durations: Record<string, { duration: number; description: Set<string> }> = {}
+
+  for (const event of timerEvents.value || []) {
+    const tagMatch = event.details.match(/^(.*?):\s*(.*)$/)
     if (tagMatch) {
       const tag = tagMatch[1].trim()
       const description = tagMatch[2].trim()
-      const duration = event.endTime ? event.endTime - event.startTime : 0
+      const duration = event.endTime
+        ? event.endTime - event.startTime
+        : new Date().getTime() - event.startTime
 
       if (!durations[tag]) {
-        durations[tag] = { duration: 0, description: [] }
+        durations[tag] = { duration: 0, description: new Set() }
       }
 
       durations[tag].duration += duration
-
-      // Add the description to the array if it's not already present
-      if (!durations[tag].description.includes(description)) {
-        durations[tag].description.push(description)
-      }
+      durations[tag].description.add(description)
     }
-  })
+  }
 
-  tagDurations.value = durations
+  tagDurations.value = Object.fromEntries(
+    Object.entries(durations).map(([tag, { duration, description }]) => [
+      tag,
+      { duration, description: Array.from(description) }
+    ])
+  )
 }
 
 function startTimer() {
