@@ -18,7 +18,7 @@
           <span v-if="isRunning" class="text-sm block mt-2"
             >Current:
             <span class="text-yellow-300">{{
-              timerEvents[timerEvents.length - 1].details
+              timerEvents[timerEvents.length - 1]?.details
             }}</span></span
           >
         </div>
@@ -97,7 +97,7 @@
           <li
             v-for="(event, index) in reversedTimerEvents"
             :key="index"
-            class="p-3 rounded-lg bg-white bg-opacity-20 text-sm"
+            class="p-3 rounded-lg bg-white bg-opacity-20 text-sm relative group"
           >
             <div class="flex justify-between items-center">
               <div class="font-semibold">Task:</div>
@@ -117,6 +117,12 @@
                 {{ formatDuration(event.startTime, event.endTime) }}
               </div>
             </div>
+            <button
+              @click="deleteEvent(index)"
+              class="absolute text-[11px] top-1 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            >
+              delete
+            </button>
           </li>
         </ul>
       </div>
@@ -151,6 +157,30 @@ const isRunning = ref(false)
 let intervalId: number | null = null
 
 const timerEvents = useLocalStorage<{ startTime: number; details: string }[]>('timerEvents', [])
+
+watch(currentTimer, (newVal) => {
+  const lastEvent = timerEvents.value[timerEvents.value.length - 1]
+  const titlePrefix = lastEvent ? lastEvent.details.split(':')[0] : ''
+  document.title = `${titlePrefix} - ${newVal}`
+})
+
+watch(isRunning, (newVal) => {
+  if (!newVal) {
+    document.title = 'Time Tracker'
+  }
+})
+
+const deleteEvent = (index: number) => {
+  const originalIndex = timerEvents.value.length - 1 - index
+  timerEvents.value = [
+    ...timerEvents.value.slice(0, originalIndex),
+    ...timerEvents.value.slice(originalIndex + 1)
+  ]
+
+  if (timerEvents.value.length === 0) {
+    stopTimer()
+  }
+}
 
 const taskList: Record<string, string> = {
   o: 'Organisatorisches',
