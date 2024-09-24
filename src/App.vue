@@ -159,6 +159,7 @@ const isRunning = ref(false)
 let intervalId: number | null = null
 
 const timerEvents = useLocalStorage<{ startTime: number; details: string }[]>('timerEvents', [])
+const notifyHours = ref(-1)
 
 watch(currentTimer, (newVal) => {
   const lastEvent = timerEvents.value[timerEvents.value.length - 1]
@@ -167,6 +168,11 @@ watch(currentTimer, (newVal) => {
 
   calculateTagDurations()
 })
+
+const getTimeInMinutes = (time: string) => {
+  const [hours, minutes, seconds] = time.split(':').map(Number)
+  return { hours, minutes, seconds }
+}
 
 watch(isRunning, (newVal) => {
   if (!newVal) {
@@ -220,6 +226,14 @@ const totalDuration = computed(() => {
     0
   )
   return formatDuration(0, totalSeconds)
+})
+
+watch(totalDuration, (newVal) => {
+  const { hours, minutes } = getTimeInMinutes(newVal)
+  if (minutes === 50 && notifyHours.value !== hours) {
+    notifyBreakTime()
+    notifyHours.value = hours
+  }
 })
 
 function calculateTagDurations() {
@@ -282,6 +296,8 @@ function startTimer() {
 
   taskInput.value = ''
   focusInput()
+
+  notifyHours.value = -1
 }
 
 function resumeLastTimer() {
@@ -342,7 +358,24 @@ onMounted(() => {
   focusInput()
   calculateTagDurations()
   resumeLastTimer()
+
+  requestNotificationPermission()
 })
+
+const requestNotificationPermission = () => {
+  if (Notification.permission !== 'granted') {
+    Notification.requestPermission()
+  }
+}
+
+const notifyBreakTime = () => {
+  if (Notification.permission === 'granted') {
+    new Notification('Time to take a break!', {
+      body: 'You have been working for 50 minutes. Take a break.',
+      icon: '/chill.webp'
+    })
+  }
+}
 
 function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
