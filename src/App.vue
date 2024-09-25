@@ -89,9 +89,14 @@
       >
         <div class="flex justify-between items-center mb-2">
           <div class="text-white text-xl font-semibold">Events</div>
-          <button @click="clearEvents" class="text-white underline focus:outline-none text-sm">
-            Clear
-          </button>
+          <div class="flex space-x-2">
+            <button @click="openAddDialog" class="text-white underline focus:outline-none text-sm">
+              Add
+            </button>
+            <button @click="clearEvents" class="text-white underline focus:outline-none text-sm">
+              Clear
+            </button>
+          </div>
         </div>
         <ul class="text-white overflow-y-auto max-h-[150px] space-y-2">
           <li
@@ -152,23 +157,26 @@
     </div>
   </div>
 
-  <!-- Edit Event Modal -->
+  <!-- Edit/Add Event Modal -->
   <div
     v-if="isEditingEvent"
     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-[2px]"
     @click.self="cancelEdit"
   >
     <div
-      class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] p-6 rounded-lg w-80 text-white relative"
+      class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] p-6 rounded-lg w-80 text-white relative edit-dialog"
       @keydown.esc="cancelEdit"
       @keydown.enter="saveEditedEvent"
       tabindex="0"
     >
-      <h2 class="text-xl font-semibold mb-4">Edit Event</h2>
+      <h2 class="text-xl font-semibold mb-4">
+        {{ editingEventIndex !== null ? 'Edit' : 'Add' }} Event
+      </h2>
       <div class="mb-4">
         <label class="block text-sm font-medium">Task Details</label>
         <input
           v-model="editingEvent.details"
+          id="inputEditDetails"
           autofocus
           class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
         />
@@ -260,14 +268,16 @@ watch(isRunning, (newVal) => {
 })
 
 const deleteEvent = (index: number) => {
-  const originalIndex = timerEvents.value.length - 1 - index
-  timerEvents.value = [
-    ...timerEvents.value.slice(0, originalIndex),
-    ...timerEvents.value.slice(originalIndex + 1)
-  ]
+  if (confirm('Are you sure you want to delete this event?')) {
+    const originalIndex = timerEvents.value.length - 1 - index
+    timerEvents.value = [
+      ...timerEvents.value.slice(0, originalIndex),
+      ...timerEvents.value.slice(originalIndex + 1)
+    ]
 
-  if (timerEvents.value.length === 0) {
-    stopTimer()
+    if (timerEvents.value.length === 0) {
+      stopTimer()
+    }
   }
 }
 
@@ -395,8 +405,10 @@ function stopTimer() {
 }
 
 function clearEvents() {
-  stopTimer()
-  timerEvents.value = []
+  if (confirm('Are you sure you want to clear all events?')) {
+    stopTimer()
+    timerEvents.value = []
+  }
 }
 
 function formatDuration(startTime: number, endTime: number): string {
@@ -449,6 +461,14 @@ function focusInput(blurOnMobile = true) {
 }
 
 const isEditingEvent = ref(false)
+watch(isEditingEvent, (newVal) => {
+  if (newVal) {
+    nextTick(() => {
+      const input = document.getElementById('inputEditDetails')
+      input?.select()
+    })
+  }
+})
 const editingEventIndex = ref<number | null>(null)
 const editingEvent = ref<{ startTime: number | null; endTime: number | null; details: string }>({
   startTime: null,
@@ -469,17 +489,56 @@ function openEditDialog(index: number) {
   })
 }
 
-function saveEditedEvent() {
-  if (editingEventIndex.value !== null) {
-    const originalIndex = timerEvents.value.length - 1 - editingEventIndex.value
-    timerEvents.value[originalIndex] = { ...editingEvent.value }
+function openAddDialog() {
+  const currentTime = Date.now()
+  editingEventIndex.value = null
+  editingEvent.value = { startTime: currentTime, endTime: currentTime, details: '' }
+  isEditingEvent.value = true
 
-    // If the edited event is the last event and timer is running, reset the interval
-    if (originalIndex === timerEvents.value.length - 1 && isRunning.value) {
-      startIntervalForCurrentTimer()
+  // Focus on the dialog to capture key events
+  nextTick(() => {
+    const dialog = document.querySelector('.edit-dialog')
+    dialog?.focus()
+  })
+}
+
+function saveEditedEvent() {
+  const isEditingLastEvent =
+    editingEventIndex.value !== null &&
+    timerEvents.value.length > 0 &&
+    timerEvents.value.length - 1 - editingEventIndex.value === timerEvents.value.length - 1 &&
+    !timerEvents.value[timerEvents.value.length - 1].endTime
+
+  if (
+    editingEvent.value.startTime &&
+    editingEvent.value.details &&
+    (editingEvent.value.endTime || isEditingLastEvent)
+  ) {
+    if (editingEventIndex.value !== null) {
+      // Editing existing event
+      const originalIndex = timerEvents.value.length - 1 - editingEventIndex.value
+      timerEvents.value[originalIndex] = { ...editingEvent.value }
+
+      // If the edited event is the last event and timer is running, reset the interval
+      if (originalIndex === timerEvents.value.length - 1 && isRunning.value) {
+        startIntervalForCurrentTimer()
+      }
+    } else {
+      // Adding new event
+      const newEvent = { ...editingEvent.value }
+      // Ensure endTime is provided when adding a new event
+      if (!newEvent.endTime) {
+        alert('Please provide an End Time for the new event.')
+        return
+      }
+      timerEvents.value.push(newEvent)
+      // Sort events by startTime
+      timerEvents.value.sort((a, b) => a.startTime - b.startTime)
     }
 
     isEditingEvent.value = false
+  } else {
+    alert('Please fill in all required fields.')
   }
 }
 
@@ -534,6 +593,8 @@ const formattedEndTime = computed({
 function updateEditingEventStart(dateString: string, timeString: string) {
   if (dateString && timeString) {
     editingEvent.value.startTime = new Date(`${dateString}T${timeString}`).getTime()
+  } else {
+    editingEvent.value.startTime = null
   }
 }
 
