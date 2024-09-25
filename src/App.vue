@@ -17,7 +17,7 @@
           {{ currentTimer }}
           <span v-if="isRunning" class="text-sm block mt-2"
             >Current:
-            <span class="text-yellow-300">{{
+            <span class="text-yellow-300 cursor-pointer" @click="openEditDialog(0)">{{
               timerEvents[timerEvents.length - 1]?.details
             }}</span></span
           >
@@ -101,15 +101,21 @@
           >
             <div class="flex justify-between items-center">
               <div class="font-semibold">Task:</div>
-              <div class="text-yellow-300 truncate">{{ event.details }}</div>
+              <div class="text-yellow-300 truncate cursor-pointer" @click="openEditDialog(index)">
+                {{ event.details }}
+              </div>
             </div>
             <div class="flex justify-between items-center mt-1">
               <div class="font-semibold">Start:</div>
-              <div>{{ new Date(event.startTime).toLocaleTimeString('de-AT') }}</div>
+              <div class="cursor-pointer" @click="openEditDialog(index)">
+                {{ new Date(event.startTime).toLocaleTimeString('de-AT') }}
+              </div>
             </div>
             <div v-if="event.endTime" class="flex justify-between items-center mt-1">
               <div class="font-semibold">End:</div>
-              <div>{{ new Date(event.endTime).toLocaleTimeString('de-AT') }}</div>
+              <div class="cursor-pointer" @click="openEditDialog(index)">
+                {{ new Date(event.endTime).toLocaleTimeString('de-AT') }}
+              </div>
             </div>
             <div class="flex justify-between items-center mt-1">
               <div class="font-semibold">Duration:</div>
@@ -145,6 +151,76 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Event Modal -->
+  <div
+    v-if="isEditingEvent"
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-[2px]"
+    @click.self="cancelEdit"
+  >
+    <div
+      class="bg-gradient-to-tl from-[#C44ECB] to-[#895DF4] p-6 rounded-lg w-80 text-white relative"
+      @keydown.esc="cancelEdit"
+      @keydown.enter="saveEditedEvent"
+      tabindex="0"
+    >
+      <h2 class="text-xl font-semibold mb-4">Edit Event</h2>
+      <div class="mb-4">
+        <label class="block text-sm font-medium">Task Details</label>
+        <input
+          v-model="editingEvent.details"
+          autofocus
+          class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
+        />
+      </div>
+      <!-- Start Date and Time -->
+      <div class="mb-4 flex space-x-2">
+        <div class="w-1/2">
+          <label class="block text-sm font-medium">Start Date</label>
+          <input
+            type="date"
+            v-model="formattedStartDate"
+            class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
+          />
+        </div>
+        <div class="w-1/2">
+          <label class="block text-sm font-medium">Start Time</label>
+          <input
+            type="time"
+            v-model="formattedStartTime"
+            class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
+          />
+        </div>
+      </div>
+      <!-- End Date and Time -->
+      <div class="mb-4 flex space-x-2">
+        <div class="w-1/2">
+          <label class="block text-sm font-medium">End Date</label>
+          <input
+            type="date"
+            v-model="formattedEndDate"
+            class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
+          />
+        </div>
+        <div class="w-1/2">
+          <label class="block text-sm font-medium">End Time</label>
+          <input
+            type="time"
+            v-model="formattedEndTime"
+            class="mt-1 block w-full bg-gray-800 border border-gray-600 rounded-md shadow-sm text-white p-2"
+          />
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button @click="cancelEdit" class="mr-2 px-4 py-2 bg-gray-500 rounded hover:bg-gray-600">
+          Cancel
+        </button>
+        <button @click="saveEditedEvent" class="px-4 py-2 bg-green-500 rounded hover:bg-green-600">
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -158,7 +234,10 @@ const currentTimer = ref('00:00:00')
 const isRunning = ref(false)
 let intervalId: number | null = null
 
-const timerEvents = useLocalStorage<{ startTime: number; details: string }[]>('timerEvents', [])
+const timerEvents = useLocalStorage<{ startTime: number; endTime?: number; details: string }[]>(
+  'timerEvents',
+  []
+)
 const notifyHours = ref(-1)
 
 watch(currentTimer, (newVal) => {
@@ -283,16 +362,7 @@ function startTimer() {
   const startTime = Date.now()
   timerEvents.value.push({ startTime, details: taskInput.value })
 
-  intervalId = setInterval(() => {
-    const currentTime = Date.now()
-    const elapsedTime = Math.floor(
-      (currentTime - timerEvents.value[timerEvents.value.length - 1].startTime) / 1000
-    )
-    const hrs = String(Math.floor(elapsedTime / 3600)).padStart(2, '0')
-    const mins = String(Math.floor((elapsedTime % 3600) / 60)).padStart(2, '0')
-    const secs = String(elapsedTime % 60).padStart(2, '0')
-    currentTimer.value = `${hrs}:${mins}:${secs}`
-  }, 1000)
+  startIntervalForCurrentTimer()
 
   taskInput.value = ''
   focusInput()
@@ -306,23 +376,7 @@ function resumeLastTimer() {
   }
 
   isRunning.value = true
-  const lastEvent = timerEvents.value[timerEvents.value.length - 1]
-  const startTime = lastEvent.startTime
-
-  function setTime() {
-    const currentTime = Date.now()
-    const elapsedTime = Math.floor((currentTime - startTime) / 1000)
-    const hrs = String(Math.floor(elapsedTime / 3600)).padStart(2, '0')
-    const mins = String(Math.floor((elapsedTime % 3600) / 60)).padStart(2, '0')
-    const secs = String(elapsedTime % 60).padStart(2, '0')
-    currentTimer.value = `${hrs}:${mins}:${secs}`
-  }
-
-  setTime()
-
-  intervalId = setInterval(() => {
-    setTime()
-  }, 1000)
+  startIntervalForCurrentTimer()
 }
 
 function stopTimer() {
@@ -392,6 +446,129 @@ function focusInput(blurOnMobile = true) {
     const input = document.querySelector('input')
     input?.focus()
   })
+}
+
+const isEditingEvent = ref(false)
+const editingEventIndex = ref<number | null>(null)
+const editingEvent = ref<{ startTime: number | null; endTime: number | null; details: string }>({
+  startTime: null,
+  endTime: null,
+  details: ''
+})
+
+function openEditDialog(index: number) {
+  editingEventIndex.value = index
+  const originalIndex = timerEvents.value.length - 1 - index
+  editingEvent.value = { ...timerEvents.value[originalIndex] }
+  isEditingEvent.value = true
+
+  // Focus on the dialog to capture key events
+  nextTick(() => {
+    const dialog = document.querySelector('.edit-dialog')
+    dialog?.focus()
+  })
+}
+
+function saveEditedEvent() {
+  if (editingEventIndex.value !== null) {
+    const originalIndex = timerEvents.value.length - 1 - editingEventIndex.value
+    timerEvents.value[originalIndex] = { ...editingEvent.value }
+
+    // If the edited event is the last event and timer is running, reset the interval
+    if (originalIndex === timerEvents.value.length - 1 && isRunning.value) {
+      startIntervalForCurrentTimer()
+    }
+
+    isEditingEvent.value = false
+  }
+}
+
+function cancelEdit() {
+  isEditingEvent.value = false
+}
+
+const formattedStartDate = computed({
+  get() {
+    if (!editingEvent.value.startTime) return ''
+    const date = new Date(editingEvent.value.startTime)
+    return date.toISOString().slice(0, 10)
+  },
+  set(value: string) {
+    updateEditingEventStart(value, formattedStartTime.value)
+  }
+})
+
+const formattedStartTime = computed({
+  get() {
+    if (!editingEvent.value.startTime) return ''
+    const date = new Date(editingEvent.value.startTime)
+    return date.toTimeString().slice(0, 5)
+  },
+  set(value: string) {
+    updateEditingEventStart(formattedStartDate.value, value)
+  }
+})
+
+const formattedEndDate = computed({
+  get() {
+    if (!editingEvent.value.endTime) return ''
+    const date = new Date(editingEvent.value.endTime)
+    return date.toISOString().slice(0, 10)
+  },
+  set(value: string) {
+    updateEditingEventEnd(value, formattedEndTime.value)
+  }
+})
+
+const formattedEndTime = computed({
+  get() {
+    if (!editingEvent.value.endTime) return ''
+    const date = new Date(editingEvent.value.endTime)
+    return date.toTimeString().slice(0, 5)
+  },
+  set(value: string) {
+    updateEditingEventEnd(formattedEndDate.value, value)
+  }
+})
+
+function updateEditingEventStart(dateString: string, timeString: string) {
+  if (dateString && timeString) {
+    editingEvent.value.startTime = new Date(`${dateString}T${timeString}`).getTime()
+  }
+}
+
+function updateEditingEventEnd(dateString: string, timeString: string) {
+  if (dateString && timeString) {
+    editingEvent.value.endTime = new Date(`${dateString}T${timeString}`).getTime()
+  } else {
+    editingEvent.value.endTime = null
+  }
+}
+
+function startIntervalForCurrentTimer() {
+  clearInterval(intervalId!)
+  intervalId = setInterval(() => {
+    try {
+      const currentTime = Date.now()
+      const lastEvent = timerEvents.value[timerEvents.value.length - 1]
+      if (!lastEvent || !lastEvent.startTime) {
+        currentTimer.value = '00:00:00'
+        return
+      }
+      const elapsedTime = Math.floor((currentTime - lastEvent.startTime) / 1000)
+      if (isNaN(elapsedTime) || elapsedTime < 0) {
+        currentTimer.value = '00:00:00'
+        return
+      }
+      const hrs = String(Math.floor(elapsedTime / 3600)).padStart(2, '0')
+      const mins = String(Math.floor((elapsedTime % 3600) / 60)).padStart(2, '0')
+      const secs = String(elapsedTime % 60).padStart(2, '0')
+      currentTimer.value = `${hrs}:${mins}:${secs}`
+    } catch (e) {
+      console.error('Error updating currentTimer:', e)
+      currentTimer.value = '00:00:00'
+    }
+  }, 1000)
 }
 </script>
 
